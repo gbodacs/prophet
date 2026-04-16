@@ -1,0 +1,6 @@
+numpy
+pandas
+prophet
+scikit-learn
+matplotlib
+pathlib

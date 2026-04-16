@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+
+    {
+      "name": "Python Debugger: Current File",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "args": ["./public/upload/peyton_manning-2026-04-16-21-03-23.csv"]
+    }
+  ]
+}

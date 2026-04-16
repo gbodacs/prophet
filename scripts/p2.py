@@ -1,6 +1,8 @@
 import pandas as pd
 from prophet import Prophet
 from prophet.plot import plot_plotly, plot_components_plotly
+import matplotlib
+matplotlib.use('Agg')
 from matplotlib import pyplot
 from pathlib import Path
 import re
@@ -108,7 +110,7 @@ def cycle_analysis(data, cycle, filename_base, filename_token, forecast_plot = F
     else:
         training = data[0:-300].iloc[:-1,]
         testing = data[-300:]
-    predict_period = 700
+    predict_period = 60
     df = training.reset_index()
     df.columns = ['index','ds','y']
     training.columns = ['ds','y']
@@ -142,25 +144,30 @@ def cycle_analysis(data, cycle, filename_base, filename_token, forecast_plot = F
     future = m.make_future_dataframe(periods=predict_period)
     forecast = m.predict(future)
     if forecast_plot:
-        m.plot_components(forecast)
-        m.plot(forecast)
-        # trainDate = training["ds"]
-        # trainValue = training["y"]
-        # plt.plot(trainDate, trainValue, '.', color='#cccccc', alpha=0.6)
-
+        components22 = m.plot_components(forecast)
+        forecast22 = m.plot(forecast)
+         
         testDate = testing.values[:,0] #date
         testValue = testing.values[:,1] #value
+
+        #forecast22.savefig(f"./public/results/{filename_base}0-{filename_token}.png")
+        #components22.savefig(f"./public/results/{filename_base}1-{filename_token}.png")
 
         conv_dates = []
         for i in range(len(testDate)):
             date1 = datetime.datetime.strptime(testing.values[i,0], '%Y-%m-%d').date()
             conv_dates = numpy.append(conv_dates, date1)
-        plt.plot(conv_dates, testValue, '.', color='#ff3333', alpha=0.6)
+        plt.plot(conv_dates, testValue, '.', color='#33ff33', alpha=0.6)
 
         plt.xlabel('Date', fontsize=12, fontweight='bold', color='gray')
         plt.ylabel('Price', fontsize=12, fontweight='bold', color='gray')
-        plt.show()
-        plt.savefig(f"./public/results/{filename_base}1-{filename_token}.png")
+        
+        forecast22.savefig(f"./public/results/{filename_base}0-{filename_token}.png")
+        components22.savefig(f"./public/results/{filename_base}1-{filename_token}.png")
+        plt.savefig(f"./public/results/{filename_base}2-{filename_token}.png")
+        #plt.show()
+
+        plt.close("all")
     
     temp = forecast['yhat']
     Mse = mean_squared_error(testing["y"], temp[0:len(testing["y"])] )
@@ -179,7 +186,7 @@ def RunPredict(csv_name, base, token):
     fileName = csv_name
     df = pd.read_csv(fileName, usecols=[0,1])
     print("Running prediction on: "+fileName)
-    cycle_analysis(df, [16, 21, 32], base, token, forecast_plot=True) # fixed cycles
+    cycle_analysis(df, [16, 21], base, token, forecast_plot=True) # fixed cycles
     dm.FinalizeAndPrint("")
 
 def SearchOneCycle(csv_name, base, token):
@@ -213,9 +220,9 @@ def main() -> int:
     #    print("Simulated processor error for testing", file=sys.stderr)
     #    return 2
 
-    root = Path(__file__).resolve().parent.parent
-    results_dir = root / "public" / "results"
-    results_dir.mkdir(parents=True, exist_ok=True)
+    #root = Path(__file__).resolve().parent.parent
+    results_dir = "./public/results"
+    #results_dir.mkdir(parents=True, exist_ok=True)
 
     stem = Path(csv_name).stem
     match = re.match(r"^(.*)-(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})$", stem)

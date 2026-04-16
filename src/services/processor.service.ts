@@ -94,7 +94,7 @@ export async function processUploadedCsv(file: Express.Multer.File): Promise<
 
   await fs.writeFile(csvPath, file.buffer);
 
-  const processorResult = await runPythonProcessor(csvFileName);
+  const processorResult = await runPythonProcessor(csvPath);
   if (!processorResult.success) {
     await fs.rm(csvPath, { force: true });
     return {
@@ -105,7 +105,7 @@ export async function processUploadedCsv(file: Express.Multer.File): Promise<
     };
   }
 
-  const pngFileNames = [1, 2, 3].map((index) => `${baseName}${index}-${token}.png`);
+  const pngFileNames = [0, 1, 2].map((index) => `${baseName}${index}-${token}.png`);
   const pngPaths = pngFileNames.map((name) => path.join(RESULTS_DIR, name));
 
   const checks = await Promise.all(
