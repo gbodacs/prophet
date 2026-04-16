@@ -1,0 +1,40 @@
+{
+  "operations": [
+    {
+      "id": "02825533-7e1d-4a11-ada5-508b1e1ba952",
+      "createdAt": "2026-04-15T20:23:12.995Z",
+      "baseName": "DIS_daily",
+      "token": "2026-04-15-22-23-12",
+      "csvFileName": "DIS_daily-2026-04-15-22-23-12.csv",
+      "csvPath": "/home/gabor/Documents/projects/predict/public/upload/DIS_daily-2026-04-15-22-23-12.csv",
+      "pngFileNames": [
+        "DIS_daily1-2026-04-15-22-23-12.png",
+        "DIS_daily2-2026-04-15-22-23-12.png",
+        "DIS_daily3-2026-04-15-22-23-12.png"
+      ],
+      "pngPaths": [
+        "/home/gabor/Documents/projects/predict/public/results/DIS_daily1-2026-04-15-22-23-12.png",
+        "/home/gabor/Documents/projects/predict/public/results/DIS_daily2-2026-04-15-22-23-12.png",
+        "/home/gabor/Documents/projects/predict/public/results/DIS_daily3-2026-04-15-22-23-12.png"
+      ]
+    },
+    {
+      "id": "f6050347-8c69-4f15-a797-4a6ab96eed21",
+      "createdAt": "2026-04-15T20:23:48.475Z",
+      "baseName": "DIS_daily",
+      "token": "2026-04-15-22-23-48",
+      "csvFileName": "DIS_daily-2026-04-15-22-23-48.csv",
+      "csvPath": "/home/gabor/Documents/projects/predict/public/upload/DIS_daily-2026-04-15-22-23-48.csv",
+      "pngFileNames": [
+        "DIS_daily1-2026-04-15-22-23-48.png",
+        "DIS_daily2-2026-04-15-22-23-48.png",
+        "DIS_daily3-2026-04-15-22-23-48.png"
+      ],
+      "pngPaths": [
+        "/home/gabor/Documents/projects/predict/public/results/DIS_daily1-2026-04-15-22-23-48.png",
+        "/home/gabor/Documents/projects/predict/public/results/DIS_daily2-2026-04-15-22-23-48.png",
+        "/home/gabor/Documents/projects/predict/public/results/DIS_daily3-2026-04-15-22-23-48.png"
+      ]
+    }
+  ]
+}
