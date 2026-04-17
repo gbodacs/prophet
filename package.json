@@ -5,8 +5,10 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json",
-    "start": "node dist/server.js"
+    "build": "tsc -p tsconfig.json && npm run css:build",
+    "start": "node dist/server.js",
+    "css:build": "postcss ./public/ui/styles.src.css -o ./public/ui/styles.css",
+    "css:watch": "postcss -w ./public/ui/styles.src.css -o ./public/ui/styles.css"
   },
   "keywords": [
     "typescript",
@@ -23,9 +25,11 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/express": "^5.0.6",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.6.0",
+    "postcss-cli": "^11.0.1",
     "tsx": "^4.21.0",
     "typescript": "^6.0.2"
   }

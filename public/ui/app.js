@@ -59,7 +59,7 @@ async function fetchOperations() {
   const payload = await response.json();
 
   if (!response.ok) {
-    throw new Error(payload.error || 'Failed to load operations');
+    throw new Error(payload.error || 'A számítások betöltése sikertelen');
   }
 
   return payload.operations || [];
@@ -73,6 +73,7 @@ function renderSelectedRun(run) {
     const img = document.createElement('img');
     img.alt = `Result image ${index + 1}`;
     img.src = `/public/results/${encodeURIComponent(fileName)}`;
+    img.addEventListener('click', () => openImageModal(img.src));
     imagesGrid.appendChild(img);
   });
 }
@@ -80,11 +81,11 @@ function renderSelectedRun(run) {
 function renderRunsList(operations) {
   runsList.innerHTML = '';
   imagesGrid.innerHTML = '';
-  selectedRunMeta.textContent = 'Select a run to see its three generated images.';
+  selectedRunMeta.textContent = 'Válassz egy számítást, hogy megnézd a képeit.';
 
   if (!operations.length) {
     const empty = document.createElement('li');
-    empty.textContent = 'No successful runs yet.';
+    empty.textContent = 'Még nincs sikeres számítás.';
     runsList.appendChild(empty);
     return;
   }
@@ -105,7 +106,7 @@ function renderDeleteList(operations) {
 
   if (!operations.length) {
     const empty = document.createElement('li');
-    empty.textContent = 'No runs available for deletion.';
+    empty.textContent = 'Nincs elérhető számítás törlésre.';
     deleteRunsList.appendChild(empty);
     return;
   }
@@ -120,14 +121,14 @@ function renderDeleteList(operations) {
 
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = 'Delete';
+    button.textContent = 'Törlés';
     button.addEventListener('click', async () => {
-      const confirmDelete = window.confirm(`Are you sure you want to delete run ${operation.csvFileName}?`);
+      const confirmDelete = window.confirm(`Biztosan törölni szeretnéd a(z) ${operation.csvFileName} számítást?`);
       if (!confirmDelete) {
         return;
       }
 
-      deleteFeedback.textContent = 'Deleting run...';
+      deleteFeedback.textContent = 'A számítás törlése folyamatban...';
       try {
         const response = await fetch(`/api/operations/${encodeURIComponent(operation.id)}`, {
           method: 'DELETE'
@@ -135,10 +136,10 @@ function renderDeleteList(operations) {
         const payload = await response.json();
 
         if (!response.ok) {
-          throw new Error(payload.error || 'Delete failed');
+          throw new Error(payload.error || 'A törlés sikertelen');
         }
 
-        deleteFeedback.textContent = 'Run deleted successfully.';
+        deleteFeedback.textContent = 'A számítás sikeresen törölve.';
         await refreshLists();
       } catch (error) {
         deleteFeedback.textContent = error.message;
@@ -178,16 +179,16 @@ function uploadWithProgress(file) {
 
       const percent = Math.round((event.loaded / event.total) * 80);
       setProgress(percent);
-      uploadStatus.textContent = `Uploading ${percent}%`;
+      uploadStatus.textContent = `Feltöltés ${percent}%`;
     };
 
     xhr.onloadstart = () => {
       setProgress(5);
-      logStep('Upload started');
+      logStep('A feltöltés megkezdődött.');
     };
 
     xhr.onerror = () => {
-      reject(new Error('Network error during upload'));
+      reject(new Error('Hálózati hiba a feltöltés során'));
     };
 
     xhr.onload = () => {
@@ -198,9 +199,9 @@ function uploadWithProgress(file) {
           return;
         }
 
-        reject(new Error(payload.error || 'Upload failed'));
+        reject(new Error(payload.error || 'A feltöltés sikertelen'));
       } catch {
-        reject(new Error('Invalid server response'));
+        reject(new Error('Hibás válasz a szervertől'));
       }
     };
 
@@ -213,7 +214,7 @@ uploadForm.addEventListener('submit', async (event) => {
 
   const file = fileInput.files && fileInput.files[0];
   if (!file) {
-    uploadStatus.textContent = 'Please choose a CSV file.';
+    uploadStatus.textContent = 'Kérlek, válassz egy CSV fájlt.';
     return;
   }
 
@@ -222,24 +223,23 @@ uploadForm.addEventListener('submit', async (event) => {
   deleteFeedback.textContent = '';
 
   try {
-    logStep(`Selected file: ${file.name}`);
+    logStep(`Kiválasztott fájl: ${file.name}`);
     const uploadPromise = uploadWithProgress(file);
 
     startWaitingAnimation();
-    logStep('File uploaded. Waiting for server-side processing');
-
+    logStep('Fájl feltöltve. Várakozás a szerver oldali feldolgozásra...');
     const payload = await uploadPromise;
 
     stopWaitingAnimation();
     setProgress(100);
-    uploadStatus.textContent = 'Processing completed successfully.';
-    logStep(payload.message || 'Run completed');
+    uploadStatus.textContent = 'A feldolgozás sikeresen befejeződött.';
+    logStep(payload.message || 'A feldolgozás sikeresen befejeződött.');
     await refreshLists();
   } catch (error) {
     stopWaitingAnimation();
     setProgress(0);
     uploadStatus.textContent = error.message;
-    logStep(`Error: ${error.message}`);
+    logStep(`Hiba: ${error.message}`);
   }
 });
 
@@ -250,6 +250,58 @@ tabs.forEach((button) => {
   button.addEventListener('click', () => {
     setActiveTab(button.dataset.tab);
   });
+});
+
+// Image Modal Functionality
+function createImageModal() {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'image-modal';
+
+  const content = document.createElement('div');
+  content.className = 'modal-content';
+
+  const closeBtn = document.createElement('div');
+  closeBtn.className = 'modal-close';
+  closeBtn.textContent = '×';
+  closeBtn.addEventListener('click', closeImageModal);
+
+  const img = document.createElement('img');
+  img.className = 'modal-image';
+
+  content.appendChild(closeBtn);
+  content.appendChild(img);
+  overlay.appendChild(content);
+
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) {
+      closeImageModal();
+    }
+  });
+
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+const imageModal = createImageModal();
+const modalImage = imageModal.querySelector('.modal-image');
+
+function openImageModal(src) {
+  modalImage.src = src;
+  imageModal.classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeImageModal() {
+  imageModal.classList.remove('active');
+  document.body.style.overflow = 'auto';
+}
+
+// Close modal with Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && imageModal.classList.contains('active')) {
+    closeImageModal();
+  }
 });
 
 void refreshLists();
