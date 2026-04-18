@@ -43,7 +43,7 @@ function startWaitingAnimation() {
   let dots = 0;
   waitingInterval = setInterval(() => {
     dots = (dots + 1) % 4;
-    uploadStatus.textContent = `Processing${'.'.repeat(dots)}`;
+    uploadStatus.textContent = `Feldolgozás folyamatban${'.'.repeat(dots)}`;
   }, 350);
 }
 
@@ -56,6 +56,12 @@ function stopWaitingAnimation() {
 
 async function fetchOperations() {
   const response = await fetch('/api/operations');
+
+  if (response.status === 401) {
+    window.location.href = '/login';
+    return [];
+  }
+
   const payload = await response.json();
 
   if (!response.ok) {
@@ -66,8 +72,23 @@ async function fetchOperations() {
 }
 
 function renderSelectedRun(run) {
-  selectedRunMeta.textContent = `${run.csvFileName} | token: ${run.token} | created: ${run.createdAt}`;
+  selectedRunMeta.textContent = `${run.csvFileName}`;
   imagesGrid.innerHTML = '';
+
+  const csvName = typeof run.csvFileName === 'string' ? run.csvFileName : '';
+  if (csvName) {
+    const predictCsvName = csvName.replace(/\.csv$/i, '_predict.csv');
+    const downloadWrap = document.createElement('div');
+    downloadWrap.className = 'predict-download';
+
+    const downloadLink = document.createElement('a');
+    downloadLink.href = `/public/results/${encodeURIComponent(predictCsvName)}`;
+    downloadLink.download = predictCsvName;
+    downloadLink.textContent = `Predikció CSV letöltése (${predictCsvName})`;
+
+    downloadWrap.appendChild(downloadLink);
+    imagesGrid.appendChild(downloadWrap);
+  }
 
   run.pngFileNames.forEach((fileName, index) => {
     const img = document.createElement('img');
@@ -194,6 +215,12 @@ function uploadWithProgress(file) {
     xhr.onload = () => {
       try {
         const payload = JSON.parse(xhr.responseText || '{}');
+
+        if (xhr.status === 401) {
+          window.location.href = '/login';
+          return;
+        }
+
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve(payload);
           return;

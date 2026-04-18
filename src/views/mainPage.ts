@@ -9,9 +9,14 @@ export function renderMainPage(): string {
 </head>
 <body>
   <header class="site-header">
-    <div class="brand-wrap">
-      <h1 class="text-blue-600 dark:text-sky-400">Próféta</h1>
-      <p>Adatok feltöltése, ellenőrzése és a sikeres feldolgozások kezelése.</p>
+    <div class="header-inner">
+      <div class="brand-wrap">
+        <h1 class="text-blue-600 dark:text-sky-400">Próféta</h1>
+        <p>Az univerzális előrejelző rendszer.</p>
+      </div>
+      <form method="post" action="/logout" class="logout-form">
+        <button type="submit" class="logout-button">Kilépés</button>
+      </form>
     </div>
   </header>
 
@@ -76,6 +81,10 @@ export function renderMainPage(): string {
 
   <footer class="site-footer">
     <p>TudatAI - Próféta - (C) 2026</p>
+    <p>TudatAI - Próféta - (C) 2026</p>
+    <p>TudatAI - Próféta - (C) 2026</p>
+    <p>TudatAI - Próféta - (C) 2026</p>
+    <p>Ez a weboldal nem használ sütiket.</p>
   </footer>
 
   <script src="/public/ui/app.js" defer></script>
