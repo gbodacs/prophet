@@ -90,7 +90,7 @@ function renderRunsList(operations) {
     return;
   }
 
-  operations.forEach((operation) => {
+  operations.reverse().forEach((operation) => {
     const li = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
