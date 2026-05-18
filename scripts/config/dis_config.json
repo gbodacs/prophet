@@ -1,0 +1,12 @@
+{
+  "growth": "linear",
+  "seasonality_mode": "multiplicative",
+  "interval_width": 0.85,
+  "mcmc_samples": 50,
+  "daily_seasonality": false,
+  "weekly_seasonality": false,
+  "yearly_seasonality": false,
+  "cycles": [16, 21],
+  "cycle_fourier_order": 32,
+  "predict_period": 100
+}

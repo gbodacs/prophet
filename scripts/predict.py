@@ -1,3 +1,4 @@
+import json
 import pandas as pd
 from prophet import Prophet
 from prophet.plot import plot_plotly, plot_components_plotly
@@ -31,7 +32,37 @@ from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 from sklearn.metrics import mean_squared_log_error
 
-def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, forecast_plot = False):
+def load_prophet_config(config_path: str) -> dict:
+    try:
+        with open(config_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print(f"Config file not found: {config_path}", file=sys.stderr)
+        raise
+    except json.JSONDecodeError as e:
+        print(f"Invalid JSON in config file: {e}", file=sys.stderr)
+        raise
+
+
+def validate_prophet_config(cfg: dict) -> None:
+    required_keys = [
+        "growth",
+        "seasonality_mode",
+        "interval_width",
+        "mcmc_samples",
+        "daily_seasonality",
+        "weekly_seasonality",
+        "yearly_seasonality",
+        "cycles",
+        "cycle_fourier_order",
+        "predict_period"
+    ]
+    missing = [key for key in required_keys if key not in cfg]
+    if missing:
+        raise KeyError(", ".join(missing))
+
+
+def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, cfg: dict, forecast_plot = False):
     training = []
     testing = []
     #if (len(data) > 2800 ):
@@ -40,7 +71,7 @@ def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, f
     #else:
     training = data[0:-60].iloc[:-1,]
     testing = data[-60:]
-    predict_period = 100
+    predict_period = cfg["predict_period"]
     df = training.reset_index()
     df.columns = ['index','ds','y']
     training.columns = ['ds','y']
@@ -49,26 +80,18 @@ def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, f
     #m.add_seasonality('self_define_cycle',period=cycle,fourier_order=32,mode=mode)
 
     m = Prophet(
-    growth="linear",
-    #holidays=holidays,
-    seasonality_mode='multiplicative',  # mcmc-vel multiplicative-ot kell hasznalni --- map-pel additive-ot
-    #changepoint_prior_scale=0.3,
-    #seasonality_prior_scale=0.3,
-    interval_width=0.85,                 # egy cycle szelessegenek rugalmassaga
-    #holidays_prior_scale=20,
-    mcmc_samples=50,
-    #changepoint_prior_scale=30,
-    #changepoint_range=0.91,
-    #seasonality_prior_scale=35,
-    #holidays_prior_scale=20,
-    daily_seasonality=False,
-    weekly_seasonality=False,
-    yearly_seasonality=False,
+        growth=cfg["growth"],
+        seasonality_mode=cfg["seasonality_mode"],
+        interval_width=cfg["interval_width"],
+        mcmc_samples=cfg["mcmc_samples"],
+        daily_seasonality=cfg["daily_seasonality"],
+        weekly_seasonality=cfg["weekly_seasonality"],
+        yearly_seasonality=cfg["yearly_seasonality"],
     )
     
     for c in cycle:
         nameCycle = 'cycle'+str(c)
-        m.add_seasonality(name=nameCycle, period=c, fourier_order=32) # prior_scale=15
+        m.add_seasonality(name=nameCycle, period=c, fourier_order=cfg["cycle_fourier_order"])
 
     m.fit(df)
     future = m.make_future_dataframe(periods=predict_period)
@@ -122,18 +145,19 @@ def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, f
 
     return 0
 
-def RunPredict(csv_name, base, token): 
+def RunPredict(csv_name, base, token, cfg: dict): 
     fileName = csv_name
     df = pd.read_csv(fileName, usecols=[0,1])
     print("Running prediction on: "+fileName)
-    cycle_analysis(df, [16, 21], base, token, csv_name, forecast_plot=True) # fixed cycles
+    cycle_analysis(df, cfg["cycles"], base, token, csv_name, cfg, forecast_plot=True)
 
 def main() -> int:
-    if len(sys.argv) != 2:
-        print("Usage: python scripts/p2.py <csv-file-name>", file=sys.stderr)
+    if len(sys.argv) != 3:
+        print("Usage: python scripts/predict.py <csv-file-name> <config-json-path>", file=sys.stderr)
         return 1
 
     csv_name = sys.argv[1]
+    config_path = sys.argv[2]
     #if "error" in csv_name.lower():
     #    print("Simulated processor error for testing", file=sys.stderr)
     #    return 2
@@ -141,6 +165,15 @@ def main() -> int:
     #root = Path(__file__).resolve().parent.parent
     results_dir = "./public/results"
     #results_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        cfg = load_prophet_config(config_path)
+        validate_prophet_config(cfg)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return 4
+    except KeyError as e:
+        print(f"Missing config keys: {e}", file=sys.stderr)
+        return 5
 
     stem = Path(csv_name).stem
     match = re.match(r"^(.*)-(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})$", stem)
@@ -151,7 +184,7 @@ def main() -> int:
     base = match.group(1)
     token = match.group(2)
 
-    RunPredict(csv_name, base, token)
+    RunPredict(csv_name, base, token, cfg)
     #for index in (1, 2, 3):
     #    file_name = f"{base}{index}-{token}.png"
     #    (results_dir / file_name).write_bytes(png_bytes)
