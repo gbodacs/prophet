@@ -1,9 +1,10 @@
 import fs from "node:fs/promises";
+import path from "node:path";
 
 import express from "express";
 import multer from "multer";
 
-import { MAX_CSV_SIZE_BYTES } from "../config";
+import { MAX_CSV_SIZE_BYTES, RESULTS_DIR } from "../config";
 import {
   addSuccessfulOperation,
   listOperations,
@@ -87,7 +88,8 @@ router.delete("/operations/:id", async (request, response, next) => {
       return;
     }
 
-    const targets = [removed.csvPath, ...removed.pngPaths];
+    const resultsCsvPath = path.join(RESULTS_DIR, `${removed.baseName}-${removed.token}_predict.csv`);
+    const targets = [removed.csvPath, resultsCsvPath, ...removed.pngPaths];
     const deleted: string[] = [];
     const missing: string[] = [];
     const failed: Array<{ path: string; reason: string }> = [];

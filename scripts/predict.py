@@ -38,13 +38,13 @@ def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, f
     #    training = data[-2800:-220].iloc[:-1,]
     #    testing = data[-220:]
     #else:
-    training = data[0:-60].iloc[:-1,]
+    training = data[0:-60]
     testing = data[-60:]
     predict_period = 100
     df = training.reset_index()
-    df.columns = ['index','ds','y']
-    training.columns = ['ds','y']
-    testing.columns = ['ds','y']
+    df.columns = ['n','o', 'p', 'np','y','ds', 't']
+    training.columns = ['n','o', 'p', 'np','y','ds']
+    testing.columns = ['n','o', 'p', 'np','y','ds']
     #m = Prophet(weekly_seasonality=False,yearly_seasonality=False,daily_seasonality=False)
     #m.add_seasonality('self_define_cycle',period=cycle,fourier_order=32,mode=mode)
 
@@ -77,15 +77,15 @@ def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, f
         components22 = m.plot_components(forecast)
         forecast22 = m.plot(forecast)
          
-        testDate = testing.values[:,0] #date
-        testValue = testing.values[:,1] #value
+        testDate = testing.values[:,5] #date
+        testValue = testing.values[:,4] #value
 
         #forecast22.savefig(f"./public/results/{filename_base}0-{filename_token}.png")
         #components22.savefig(f"./public/results/{filename_base}1-{filename_token}.png")
 
         conv_dates = []
         for i in range(len(testDate)):
-            date1 = datetime.datetime.strptime(testing.values[i,0], '%Y-%m-%d').date()
+            date1 = datetime.datetime.strptime(testing.values[i,5], '%m/%d/%Y 0:00').date()
             conv_dates = numpy.append(conv_dates, date1)
         plt.plot(conv_dates, testValue, '.', color='#33ff33', alpha=0.6)
 
@@ -95,36 +95,36 @@ def cycle_analysis(data, cycle, filename_base, filename_token, input_csv_name, f
         forecast22.savefig(f"./public/results/{filename_base}0-{filename_token}.png")
         components22.savefig(f"./public/results/{filename_base}1-{filename_token}.png")
         plt.savefig(f"./public/results/{filename_base}2-{filename_token}.png")
-        #plt.show()
+        plt.show()
 
-        plt.close("all")
+        #plt.close("all")
     
-    input_with_prediction = data.copy()
-    input_with_prediction.columns = ['ds', 'y']
-    input_with_prediction['predict'] = numpy.nan
+  #  input_with_prediction = data.copy()
+  #  input_with_prediction.columns = ['ds', 'y']
+  #  input_with_prediction['predict'] = numpy.nan
 
-    forecast_with_input = forecast[['ds', 'yhat']].copy()
-    forecast_with_input['ds'] = forecast_with_input['ds'].dt.strftime('%Y-%m-%d')
+  #  forecast_with_input = forecast[['ds', 'yhat']].copy()
+  #  forecast_with_input['ds'] = forecast_with_input['ds'].dt.strftime('%Y-%m-%d')
 
-    input_dates = set(input_with_prediction['ds'].astype(str))
-    future_only = forecast_with_input[~forecast_with_input['ds'].isin(input_dates)].copy()
-    future_only = future_only.rename(columns={'yhat': 'predict'})
-    future_only['y'] = numpy.nan
-    future_only = future_only[['ds', 'y', 'predict']]
+  #  input_dates = set(input_with_prediction['ds'].astype(str))
+  #  future_only = forecast_with_input[~forecast_with_input['ds'].isin(input_dates)].copy()
+  #  future_only = future_only.rename(columns={'yhat': 'predict'})
+  #  future_only['y'] = numpy.nan
+  #  future_only = future_only[['ds', 'y', 'predict']]
 
-    output_df = pd.concat([input_with_prediction, future_only], ignore_index=True)
-    output_df = output_df.sort_values('ds').reset_index(drop=True)
+   # output_df = pd.concat([input_with_prediction, future_only], ignore_index=True)
+   # output_df = output_df.sort_values('ds').reset_index(drop=True)
 
-    output_name = f"{Path(input_csv_name).stem}_predict.csv"
-    output_path = Path("./public/results") / output_name
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_df.to_csv(output_path, index=False)
+   # output_name = f"{Path(input_csv_name).stem}_predict.csv"
+   # output_path = Path("./public/results") / output_name
+   # output_path.parent.mkdir(parents=True, exist_ok=True)
+   # output_df.to_csv(output_path, index=False)
 
     return 0
 
 def RunPredict(csv_name, base, token): 
     fileName = csv_name
-    df = pd.read_csv(fileName, usecols=[0,1])
+    df = pd.read_csv(fileName) #usecols=[0,1])
     print("Running prediction on: "+fileName)
     cycle_analysis(df, [16, 21], base, token, csv_name, forecast_plot=True) # fixed cycles
 

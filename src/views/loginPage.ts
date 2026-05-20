@@ -36,7 +36,7 @@ export function renderLoginPage(options: LoginPageOptions = {}): string {
       <form method="post" action="/login" class="form-group">
         <label for="username">Felhasználónév</label>
         <input id="username" name="username" type="text" autocomplete="username" required />
-
+        <br/>
         <label for="password">Jelszó</label>
         <input id="password" name="password" type="password" autocomplete="current-password" required />
 

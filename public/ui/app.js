@@ -1,5 +1,8 @@
 const tabs = Array.from(document.querySelectorAll('.tab-button'));
 const panels = Array.from(document.querySelectorAll('.tab-panel'));
+const sidebarNav = document.getElementById('sidebar-nav');
+const sidebarToggle = document.getElementById('sidebar-toggle');
+const sidebarOperationsList = document.getElementById('sidebar-operations-list');
 
 const uploadForm = document.getElementById('upload-form');
 const fileInput = document.getElementById('csv-file');
@@ -10,6 +13,7 @@ const uploadLog = document.getElementById('upload-log');
 const runsList = document.getElementById('runs-list');
 const refreshListButton = document.getElementById('refresh-list');
 const selectedRunMeta = document.getElementById('selected-run-meta');
+const selectedRunLink = document.getElementById('selected-run-link');
 const imagesGrid = document.getElementById('images-grid');
 
 const deleteRunsList = document.getElementById('delete-runs-list');
@@ -17,6 +21,20 @@ const deleteFeedback = document.getElementById('delete-feedback');
 const refreshDeleteButton = document.getElementById('refresh-delete-list');
 
 let waitingInterval = null;
+let activeOperationId = null;
+
+function setSidebarOpen(isOpen) {
+  document.body.classList.toggle('sidebar-open', isOpen);
+
+  if (sidebarNav) {
+    sidebarNav.classList.toggle('open', isOpen);
+  }
+
+  if (sidebarToggle) {
+    sidebarToggle.setAttribute('aria-expanded', String(isOpen));
+    sidebarToggle.setAttribute('aria-label', isOpen ? 'Menü bezárása' : 'Menü megnyitása');
+  }
+}
 
 function setActiveTab(tabId) {
   tabs.forEach((button) => {
@@ -25,6 +43,26 @@ function setActiveTab(tabId) {
 
   panels.forEach((panel) => {
     panel.classList.toggle('active', panel.id === tabId);
+  });
+}
+
+function resetSelectedRunDisplay() {
+  selectedRunLink.innerHTML = '';
+  imagesGrid.innerHTML = '';
+  selectedRunMeta.textContent = 'Válassz egy számítást, hogy megnézd a képeit.';
+}
+
+function syncOperationSelectionState() {
+  Array.from(runsList.querySelectorAll('li')).forEach((item) => {
+    item.classList.toggle('active', item.dataset.operationId === activeOperationId);
+  });
+
+  if (!sidebarOperationsList) {
+    return;
+  }
+
+  Array.from(sidebarOperationsList.querySelectorAll('.sidebar-operation-button')).forEach((button) => {
+    button.classList.toggle('active', button.dataset.operationId === activeOperationId);
   });
 }
 
@@ -72,7 +110,9 @@ async function fetchOperations() {
 }
 
 function renderSelectedRun(run) {
+  activeOperationId = run.id;
   selectedRunMeta.textContent = `${run.csvFileName}`;
+  selectedRunLink.innerHTML = '';
   imagesGrid.innerHTML = '';
 
   const csvName = typeof run.csvFileName === 'string' ? run.csvFileName : '';
@@ -84,10 +124,10 @@ function renderSelectedRun(run) {
     const downloadLink = document.createElement('a');
     downloadLink.href = `/public/results/${encodeURIComponent(predictCsvName)}`;
     downloadLink.download = predictCsvName;
-    downloadLink.textContent = `Predikció CSV letöltése (${predictCsvName})`;
+    downloadLink.textContent = `Predikció letöltése`;// (${predictCsvName})`;
 
     downloadWrap.appendChild(downloadLink);
-    imagesGrid.appendChild(downloadWrap);
+    selectedRunLink.appendChild(downloadWrap);
   }
 
   run.pngFileNames.forEach((fileName, index) => {
@@ -97,12 +137,63 @@ function renderSelectedRun(run) {
     img.addEventListener('click', () => openImageModal(img.src));
     imagesGrid.appendChild(img);
   });
+
+  syncOperationSelectionState();
+}
+
+function renderSidebarOperations(operations) {
+  if (!sidebarOperationsList) {
+    return;
+  }
+
+  sidebarOperationsList.innerHTML = '';
+
+  if (!operations.length) {
+    const empty = document.createElement('li');
+    empty.className = 'sidebar-empty';
+    empty.textContent = 'Nincs még számítás.';
+    sidebarOperationsList.appendChild(empty);
+    return;
+  }
+
+  [...operations].reverse().forEach((operation) => {
+    const li = document.createElement('li');
+    li.className = 'sidebar-operation-item';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'sidebar-operation-button';
+    button.dataset.operationId = operation.id;
+
+    const label = document.createElement('span');
+    label.className = 'sidebar-operation-label';
+    label.textContent = operation.baseName;
+
+    const meta = document.createElement('span');
+    meta.className = 'sidebar-operation-meta';
+    meta.textContent = operation.token;
+
+    button.appendChild(label);
+    button.appendChild(meta);
+    button.addEventListener('click', () => {
+      setActiveTab('list-tab');
+      renderSelectedRun(operation);
+
+      if (window.innerWidth <= 768) {
+        setSidebarOpen(false);
+      }
+    });
+
+    li.appendChild(button);
+    sidebarOperationsList.appendChild(li);
+  });
+
+  syncOperationSelectionState();
 }
 
 function renderRunsList(operations) {
   runsList.innerHTML = '';
-  imagesGrid.innerHTML = '';
-  selectedRunMeta.textContent = 'Válassz egy számítást, hogy megnézd a képeit.';
+  resetSelectedRunDisplay();
 
   if (!operations.length) {
     const empty = document.createElement('li');
@@ -111,8 +202,9 @@ function renderRunsList(operations) {
     return;
   }
 
-  operations.reverse().forEach((operation) => {
+  [...operations].reverse().forEach((operation) => {
     const li = document.createElement('li');
+    li.dataset.operationId = operation.id;
     const button = document.createElement('button');
     button.type = 'button';
     button.textContent = `${operation.baseName} (${operation.token})`;
@@ -120,6 +212,8 @@ function renderRunsList(operations) {
     li.appendChild(button);
     runsList.appendChild(li);
   });
+
+  syncOperationSelectionState();
 }
 
 function renderDeleteList(operations) {
@@ -177,9 +271,22 @@ function renderDeleteList(operations) {
 async function refreshLists() {
   try {
     const operations = await fetchOperations();
+    renderSidebarOperations(operations);
     renderRunsList(operations);
     renderDeleteList(operations);
+
+    const activeOperation = operations.find((operation) => operation.id === activeOperationId);
+    if (activeOperation) {
+      renderSelectedRun(activeOperation);
+      return;
+    }
+
+    activeOperationId = null;
+    syncOperationSelectionState();
   } catch (error) {
+    if (sidebarOperationsList) {
+      sidebarOperationsList.innerHTML = `<li class="sidebar-empty">${error.message}</li>`;
+    }
     runsList.innerHTML = `<li>${error.message}</li>`;
     deleteRunsList.innerHTML = `<li>${error.message}</li>`;
   }
@@ -273,9 +380,24 @@ uploadForm.addEventListener('submit', async (event) => {
 refreshListButton.addEventListener('click', refreshLists);
 refreshDeleteButton.addEventListener('click', refreshLists);
 
+if (sidebarToggle) {
+  sidebarToggle.addEventListener('click', () => {
+    setSidebarOpen(!document.body.classList.contains('sidebar-open'));
+  });
+}
+
 tabs.forEach((button) => {
   button.addEventListener('click', () => {
-    setActiveTab(button.dataset.tab);
+    const tabId = button.dataset.tab;
+    if (!tabId) {
+      return;
+    }
+
+    setActiveTab(tabId);
+
+    if (window.innerWidth <= 768) {
+      setSidebarOpen(false);
+    }
   });
 });
 
@@ -329,6 +451,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && imageModal.classList.contains('active')) {
     closeImageModal();
   }
+
+  if (e.key === 'Escape' && document.body.classList.contains('sidebar-open')) {
+    setSidebarOpen(false);
+  }
 });
 
+setSidebarOpen(false);
 void refreshLists();
