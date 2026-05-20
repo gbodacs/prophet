@@ -6,7 +6,8 @@ import {
   RESULTS_DIR,
   ROOT_DIR,
   UPLOAD_DIR,
-  PYTHON_SCRIPT_PATH
+  PYTHON_SCRIPT_PATH,
+  PYTHON_DIS_CONFIG_PATH
 } from "../config";
 
 export interface ProcessResult {
@@ -34,7 +35,7 @@ function formatToken(date: Date): string {
 
 function runPythonCommand(command: "python" | "python3", csvFileName: string): Promise<ProcessResult> {
   return new Promise((resolve) => {
-    const child = spawn(command, [PYTHON_SCRIPT_PATH, csvFileName], { cwd: ROOT_DIR });
+    const child = spawn(command, [PYTHON_SCRIPT_PATH, csvFileName, PYTHON_DIS_CONFIG_PATH], { cwd: ROOT_DIR });
 
     let stderr = "";
 
